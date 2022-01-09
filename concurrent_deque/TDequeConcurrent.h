@@ -1,4 +1,4 @@
-/* 
+/*
  *  Copyright (C) Christophe Meneboeuf <christophe@xtof.info>
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -50,30 +50,113 @@ public:
             _collection.emplace_back(std::forward<Args>(args)...);
         } );
     }
-    
+
     //! \brief Clears the deque
     void clear( void )
     {
         std::lock_guard<std::mutex> lock(_mutex);
         _collection.clear();
     }
-    
-    //! \brief Returns the front element and removes it from the collection
+
+    //! \brief Adds a new instance of T at the front of the deque
+    template<typename... Args>
+    void push_front( Args&&... args )
+    {
+        addData_protected( [&] {
+            _collection.push_front(std::forward<Args>(args)...);
+        } );
+    }
+
+    //! \brief Returns the front element of the collection
     //!
     //!        No exception is ever returned as we garanty that the deque is not empty
     //!        before trying to return data.
-    T pop_front( void ) noexcept
+    T front( void ) noexcept
     {
         std::unique_lock<std::mutex> lock{_mutex};
         while (_collection.empty()) {
             _condNewData.wait(lock);
         }
-        auto elem = std::move(_collection.front());
+//        auto elem = std::move(_collection.front());
+//        return elem;
+        return &_collection.front();
+    }
+
+    //! \brief Removes the front element of the collection
+    //!
+    //!        No exception is ever returned as we garanty that the deque is not empty
+    //!        before trying to return data.
+    void pop_front( void ) noexcept
+    {
+        std::unique_lock<std::mutex> lock{_mutex};
+        while (_collection.empty()) {
+            _condNewData.wait(lock);
+        }
         _collection.pop_front();
+    }
+
+    //! \brief Adds a new instance of T in back of the deque
+    template<typename... Args>
+    void push_back( Args&&... args )
+    {
+        addData_protected( [&] {
+            _collection.push_back(std::forward<Args>(args)...);
+        } );
+    }
+
+    //! \brief Returns the back element of the collection
+    //!
+    //!        No exception is ever returned as we garanty that the deque is not empty
+    //!        before trying to return data.
+    T back( void ) noexcept
+    {
+        std::unique_lock<std::mutex> lock{_mutex};
+        while (_collection.empty()) {
+            _condNewData.wait(lock);
+        }
+//        auto elem = std::move(_collection.back());
+//        return elem;
+        return &_collection.back();
+    }
+
+    //! \brief Removes the back element of the collection
+    //!
+    //!        No exception is ever returned as we garanty that the deque is not empty
+    //!        before trying to return data.
+    void pop_back( void ) noexcept
+    {
+        std::unique_lock<std::mutex> lock{_mutex};
+        while (_collection.empty()) {
+            _condNewData.wait(lock);
+        }
+        _collection.pop_back();
+    }
+
+    //! \brief Returns whether the collection is empty
+    //!
+    //!        No exception is ever returned as we garanty that the deque is not empty
+    //!        before trying to return data.
+    bool empty( void ) noexcept
+    {
+        std::unique_lock<std::mutex> lock{_mutex};
+        _condNewData.wait(lock);
+        auto elem = std::move(_collection.empty());
         return elem;
     }
 
-
+    //! \brief Returns the number elements in the collection
+    //!
+    //!        No exception is ever returned as we garanty that the deque is not empty
+    //!        before trying to return data.
+    uint size( void ) noexcept
+    {
+        std::unique_lock<std::mutex> lock{_mutex};
+        while (_collection.empty()) {
+            _condNewData.wait(lock);
+        }
+        auto elem = std::move(_collection.size());
+        return elem;
+    }
 
 private:
 
